@@ -4,7 +4,7 @@
 
 use std::convert::TryFrom;
 use std::fmt;
-use std::io::{self, Read as _, Write as _};
+use std::io::{self, IoSliceMut, Read as _, Write as _};
 use std::net::Shutdown;
 #[cfg(not(async_net_no_io_safety))]
 use std::os::unix::io::{AsFd, BorrowedFd, OwnedFd};
@@ -19,7 +19,7 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 
 #[doc(no_inline)]
-pub use std::os::unix::net::{SocketAddr, UCred};
+pub use std::os::unix::net::{SocketAddr, SocketAncillary};
 
 use async_io::Async;
 use futures_lite::{prelude::*, ready};
@@ -330,11 +330,6 @@ impl UnixStream {
     /// ```
     pub fn peer_addr(&self) -> io::Result<SocketAddr> {
         self.inner.get_ref().peer_addr()
-    }
-
-    /// Gets the peer credentials for this Unix domain socket.
-    pub fn peer_cred(&self) -> io::Result<UCred> {
-        self.inner.get_ref().peer_cred()
     }
 
     /// Shuts down the read half, write half, or both halves of this connection.
@@ -671,6 +666,20 @@ impl UnixDatagram {
         self.inner.recv_from(buf).await
     }
 
+    /// Receives data and ancillary data from socket.
+    ///
+    /// On success, returns the number of bytes read,
+    /// if the data was truncated and the address from whence the msg came.
+    pub async fn recv_vectored_with_ancillary_from(
+        &self,
+        bufs: &mut [IoSliceMut<'_>],
+        ancillary: &mut SocketAncillary<'_>,
+    ) -> io::Result<(usize, bool, SocketAddr)> {
+        self.inner
+            .read_with(|io| io.recv_vectored_with_ancillary_from(bufs, ancillary))
+            .await
+    }
+
     /// Sends data to the given address.
     ///
     /// On success, returns the number of bytes sent.
@@ -746,6 +755,13 @@ impl UnixDatagram {
     /// ```
     pub fn shutdown(&self, how: Shutdown) -> io::Result<()> {
         self.inner.get_ref().shutdown(how)
+    }
+
+    /// Moves the socket to pass unix credentials as control message in SocketAncillary.
+    ///
+    /// Set the socket option SO_PASSCRED.
+    pub fn set_passcred(&self, passcred: bool) -> io::Result<()> {
+        self.inner.get_ref().set_passcred(passcred)
     }
 }
 

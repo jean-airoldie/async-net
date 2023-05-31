@@ -29,7 +29,7 @@
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs, missing_debug_implementations, rust_2018_idioms)]
-#![feature(peer_credentials_unix_socket)]
+#![feature(unix_socket_ancillary_data)]
 
 #[cfg(unix)]
 pub mod unix;
