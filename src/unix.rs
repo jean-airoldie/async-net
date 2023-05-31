@@ -19,7 +19,7 @@ use std::sync::Arc;
 use std::task::{Context, Poll};
 
 #[doc(no_inline)]
-pub use std::os::unix::net::SocketAddr;
+pub use std::os::unix::net::{SocketAddr, UCred};
 
 use async_io::Async;
 use futures_lite::{prelude::*, ready};
@@ -330,6 +330,11 @@ impl UnixStream {
     /// ```
     pub fn peer_addr(&self) -> io::Result<SocketAddr> {
         self.inner.get_ref().peer_addr()
+    }
+
+    /// Gets the peer credentials for this Unix domain socket.
+    pub fn peer_cred(&self) -> io::Result<UCred> {
+        self.inner.get_ref().peer_cred()
     }
 
     /// Shuts down the read half, write half, or both halves of this connection.
